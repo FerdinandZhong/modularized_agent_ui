@@ -1,0 +1,122 @@
+// Workflow configuration returned by GET /api/workflow
+export interface WorkflowConfig {
+  workflow: WorkflowMeta;
+  agents: AgentMetadata[];
+  tasks: TaskMetadata[];
+  toolInstances: ToolInstance[];
+}
+
+export interface WorkflowMeta {
+  workflow_id: string;
+  name: string;
+  description?: string;
+  is_conversational: boolean;
+}
+
+export interface AgentMetadata {
+  agent_id: string;
+  name: string;
+  role?: string;
+  goal?: string;
+}
+
+export interface TaskMetadata {
+  task_id: string;
+  name: string;
+  description?: string;
+  inputs: string[];
+  agent_id?: string;
+}
+
+export interface ToolInstance {
+  tool_instance_id: string;
+  name: string;
+  type: string;
+}
+
+// Session
+export interface SessionResponse {
+  session_id: string;
+  session_directory: string;
+}
+
+// Kickoff
+export interface KickoffRequest {
+  inputs?: Record<string, unknown>;
+  session_id?: string;
+  // conversational mode
+  user_input?: string;
+  context?: string;
+}
+
+export interface KickoffResponse {
+  trace_id: string;
+}
+
+// Events
+export interface WorkflowEvent {
+  type: WorkflowEventType;
+  timestamp: string;
+  agent_studio_id?: string;
+  trace_id?: string;
+  // agent events
+  agent_name?: string;
+  agent_role?: string;
+  // task events
+  task_name?: string;
+  task_description?: string;
+  // tool events
+  tool_name?: string;
+  tool_input?: unknown;
+  tool_output?: unknown;
+  // llm events
+  model?: string;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  // completion
+  output?: string;
+  result?: string;
+  error?: string;
+}
+
+export type WorkflowEventType =
+  | 'task_started'
+  | 'task_completed'
+  | 'agent_execution_started'
+  | 'agent_execution_completed'
+  | 'agent_execution_error'
+  | 'tool_usage_started'
+  | 'tool_usage_finished'
+  | 'tool_usage_error'
+  | 'llm_call_started'
+  | 'llm_call_completed'
+  | 'llm_call_failed'
+  | 'crew_kickoff_completed'
+  | 'crew_kickoff_failed';
+
+export interface EventsResponse {
+  events: WorkflowEvent[];
+}
+
+// File upload
+export interface FileUploadResponse {
+  file_path: string;
+  file_name: string;
+  file_size: number;
+}
+
+// Chat
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  attachmentName?: string;
+  attachmentPath?: string;
+}
+
+// API error
+export interface ApiError {
+  message: string;
+  status: number;
+}

@@ -1,0 +1,132 @@
+name: Deploy Agent Workflow UI to CML
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild (rerun all jobs even if already succeeded)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  # ── 1. Get or create the CML project, wait for git clone ──────────────────
+  setup-project:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      project_id: ${{ steps.setup.outputs.project_id }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pyyaml
+
+      - name: Setup CML Project
+        id: setup
+        env:
+          CML_HOST: ${{ secrets.CML_HOST }}
+          CML_API_KEY: ${{ secrets.CML_API_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          echo "🚀 Setting up CML project…"
+          python cai/setup_project.py
+          PROJECT_ID=$(cat /tmp/project_id.txt)
+          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+          echo "✅ Project ID: $PROJECT_ID"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Setup Project" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Project ID**: ${{ steps.setup.outputs.project_id }}" >> $GITHUB_STEP_SUMMARY
+
+  # ── 2. Create / update jobs and the Application ───────────────────────────
+  create-jobs:
+    needs: setup-project
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pyyaml
+
+      - name: Create / update CML Jobs and Application
+        env:
+          CML_HOST: ${{ secrets.CML_HOST }}
+          CML_API_KEY: ${{ secrets.CML_API_KEY }}
+          RUNTIME_IDENTIFIER: ${{ secrets.RUNTIME_IDENTIFIER }}
+          WORKFLOW_BACKEND_URL: ${{ secrets.WORKFLOW_BACKEND_URL }}
+          WORKFLOW_API_KEY: ${{ secrets.WORKFLOW_API_KEY }}
+        run: |
+          echo "📋 Creating/updating jobs and application…"
+          python cai/create_jobs.py --project-id ${{ needs.setup-project.outputs.project_id }}
+          echo "✅ Done"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Create Jobs" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Project ID**: ${{ needs.setup-project.outputs.project_id }}" >> $GITHUB_STEP_SUMMARY
+
+  # ── 3. Trigger job chain; restart Application when done ───────────────────
+  trigger-deployment:
+    needs: [setup-project, create-jobs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120   # git_sync(5) + setup_environment(60) + buffer
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pyyaml
+
+      - name: Trigger deployment and restart Application
+        env:
+          CML_HOST: ${{ secrets.CML_HOST }}
+          CML_API_KEY: ${{ secrets.CML_API_KEY }}
+          FORCE_REBUILD: ${{ github.event.inputs.force_rebuild || 'false' }}
+        run: |
+          echo "🚀 Triggering deployment…"
+          python cai/trigger_jobs.py \
+            --project-id ${{ needs.setup-project.outputs.project_id }} \
+            --jobs-config cai/jobs_config.yaml
+          echo "✅ Deployment complete"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Project ID**: ${{ needs.setup-project.outputs.project_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Repository | ${{ github.repository }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Force Rebuild | ${{ github.event.inputs.force_rebuild || 'false' }} |" >> $GITHUB_STEP_SUMMARY
