@@ -48,12 +48,13 @@ class DeploymentManager:
         with open(config_path) as f:
             return yaml.safe_load(f)
 
-    def get_runtime(self) -> Optional[str]:
-        runtime = os.environ.get("RUNTIME_IDENTIFIER")
-        if runtime:
-            print(f"✅ Runtime (env): {runtime[:80]}…")
-        else:
-            print("⚠️  RUNTIME_IDENTIFIER not set — jobs may use workspace default")
+    def get_runtime(self) -> str:
+        runtime = os.environ.get("RUNTIME_IDENTIFIER", "").strip()
+        if not runtime:
+            print("❌ RUNTIME_IDENTIFIER is not set.")
+            print("   Pass it as a workflow_dispatch input or set it as a GitHub secret.")
+            sys.exit(1)
+        print(f"✅ Runtime: {runtime[:80]}…")
         return runtime
 
     # ── Jobs ─────────────────────────────────────────────────────────────────

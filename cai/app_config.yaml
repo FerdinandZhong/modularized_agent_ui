@@ -9,8 +9,7 @@ resources:
   memory: 4  # GB
 
 runtime:
-  # Update to the Python 3.11 runtime available in your CML workspace
-  identifier: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-workbench-python3.11-standard:2024.10.1-b10"
+  identifier: "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-jupyterlab-python3.11-standard:2026.01.1-b6"
 
 environment:
   NEXT_TELEMETRY_DISABLED: "1"
