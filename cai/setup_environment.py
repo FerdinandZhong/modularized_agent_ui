@@ -138,7 +138,7 @@ NGINX_URL = f"https://nginx.org/download/nginx-{NGINX_VERSION}.tar.gz"
 PCRE2_VERSION = "10.43"
 PCRE2_URL = f"https://github.com/PCRE2Project/pcre2/releases/download/pcre2-{PCRE2_VERSION}/pcre2-{PCRE2_VERSION}.tar.gz"
 ZLIB_VERSION = "1.3.1"
-ZLIB_URL = f"https://zlib.net/zlib-{ZLIB_VERSION}.tar.gz"
+ZLIB_URL = f"https://github.com/madler/zlib/releases/download/v{ZLIB_VERSION}/zlib-{ZLIB_VERSION}.tar.gz"
 
 
 def fetch_and_extract(url, dest_dir="/tmp"):
