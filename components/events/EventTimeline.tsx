@@ -5,6 +5,19 @@ import { Activity, Clock } from 'lucide-react';
 import { WorkflowEvent } from '@/lib/types';
 import { EventCard } from './EventCard';
 
+function getLiveStatus(events: WorkflowEvent[]): string {
+  if (!events.length) return 'Processing…';
+  const last = events[events.length - 1];
+  if (last.type === 'llm_call_started')          return `${last.model ?? 'LLM'} is thinking…`;
+  if (last.type === 'tool_usage_started')         return `Using tool: ${last.tool_name ?? ''}`;
+  if (last.type === 'agent_execution_started')    return `${last.agent_name ?? 'Agent'} is working…`;
+  if (last.type === 'task_started')               return `Running task: ${last.task_name ?? ''}`;
+  if (last.type === 'llm_call_completed')         return `${last.model ?? 'LLM'} responded — processing…`;
+  if (last.type === 'tool_usage_finished')        return `Tool finished — continuing…`;
+  if (last.type === 'agent_execution_completed')  return `${last.agent_name ?? 'Agent'} done — next step…`;
+  return 'Processing…';
+}
+
 interface EventTimelineProps {
   events: WorkflowEvent[];
   isRunning: boolean;
@@ -53,11 +66,13 @@ export function EventTimeline({ events, isRunning }: EventTimelineProps) {
               <EventCard key={`${event.type}-${i}`} event={event} index={i} />
             ))}
             {isRunning && (
-              <div className="flex items-center gap-3 pl-0.5">
-                <div className="flex h-6 w-6 items-center justify-center">
-                  <div className="h-2 w-2 rounded-full bg-apple-blue animate-pulse" />
+              <div className="flex items-center gap-3 pl-0.5 animate-fade-in">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center">
+                  <div className="h-2 w-2 rounded-full bg-apple-bright-blue animate-pulse" />
                 </div>
-                <span className="text-caption text-white/25 italic">Processing…</span>
+                <span className="text-caption text-apple-bright-blue/60 italic">
+                  {getLiveStatus(events)}
+                </span>
               </div>
             )}
           </div>

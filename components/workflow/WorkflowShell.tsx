@@ -45,7 +45,6 @@ export function WorkflowShell() {
   const { messages, addMessage, clearMessages } = useChatStore();
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const seenCountRef = useRef(0);
   const demoIndexRef = useRef(0);
 
   const stopPolling = useCallback(() => {
@@ -61,16 +60,14 @@ export function WorkflowShell() {
   const startPolling = useCallback(
     (traceId: string) => {
       const client = createApiClient({ workflowUrl, apiKey });
-      seenCountRef.current = 0;
 
       pollRef.current = setInterval(async () => {
         try {
-          const { events: all } = await client.getEvents(traceId);
-          const fresh = all.slice(seenCountRef.current);
+          // API returns only new (delta) events each call — add them all directly
+          const { events: fresh } = await client.getEvents(traceId);
           if (fresh.length === 0) return;
 
           addEvents(fresh);
-          seenCountRef.current = all.length;
 
           const terminal = fresh.find((e) => TERMINAL_EVENT_TYPES.includes(e.type));
           if (terminal) {
