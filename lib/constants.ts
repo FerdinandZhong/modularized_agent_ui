@@ -5,7 +5,7 @@ export const TERMINAL_EVENT_TYPES: WorkflowEventType[] = [
   'crew_kickoff_failed',
 ];
 
-export const EVENT_POLL_INTERVAL_MS = 10000;
+export const EVENT_POLL_INTERVAL_MS = 5000;
 
 export const FILE_UPLOAD_CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 

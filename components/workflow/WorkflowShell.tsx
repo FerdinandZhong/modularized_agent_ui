@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef, useCallback, useEffect } from 'react';
-import { Play, RotateCcw } from 'lucide-react';
+import { useRef, useCallback, useEffect, useState } from 'react';
+import { Play, RotateCcw, Brain, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AttachmentState } from '@/components/chat/ChatInput';
 import { InputRenderer } from '@/components/inputs/InputRenderer';
@@ -44,6 +44,8 @@ export function WorkflowShell() {
   const { workflowData, workflowUrl, apiKey, inputs, sessionId, resetInputs } = useWorkflowStore();
   const { events, isRunning, crewOutput, startExecution, addEvents, stopExecution, reset: resetEvents } = useEventStore();
   const { messages, addMessage, clearMessages } = useChatStore();
+
+  const [showReasoning, setShowReasoning] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const demoIndexRef = useRef(0);
@@ -295,18 +297,39 @@ export function WorkflowShell() {
 
       {/* ── Right panel ── */}
       <div className="flex flex-1 flex-col bg-surface-dark-5 overflow-hidden">
-        {crewOutput ? (
-          <div className="flex flex-col h-full overflow-hidden">
-            <div className="flex-1 overflow-hidden">
-              <WorkflowOutput output={crewOutput} />
-            </div>
-            {events.length > 0 && (
-              <div className="h-[38%] shrink-0 border-t border-white/[0.06] overflow-hidden">
-                <EventTimeline events={events} isRunning={isRunning} />
+        {crewOutput ? (() => {
+          const thinkingCount = events.filter(e => e.type === 'llm_call_completed' && e.response).length;
+          return (
+            <div className="flex flex-col h-full overflow-hidden">
+              <div className="flex-1 overflow-hidden">
+                <WorkflowOutput output={crewOutput} workflowUrl={workflowUrl} apiKey={apiKey} />
               </div>
-            )}
-          </div>
-        ) : isRunning ? (
+              {thinkingCount > 0 && (
+                <div
+                  className={`shrink-0 border-t border-white/[0.06] overflow-hidden transition-[height] duration-200 ${showReasoning ? 'h-[42%]' : 'h-10'}`}
+                >
+                  <button
+                    onClick={() => setShowReasoning(v => !v)}
+                    className="flex items-center justify-between w-full px-5 h-10 text-white/30 hover:text-white/60 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Brain size={13} />
+                      <span className="text-micro font-medium tracking-wider uppercase">
+                        Reasoning · {thinkingCount} {thinkingCount === 1 ? 'step' : 'steps'}
+                      </span>
+                    </div>
+                    {showReasoning ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  </button>
+                  {showReasoning && (
+                    <div className="h-[calc(100%-2.5rem)] overflow-hidden">
+                      <AgentThinking events={events} isRunning={false} hideHeader />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })() : isRunning ? (
           <div className="flex flex-col h-full overflow-hidden">
             <div className="h-[40%] shrink-0 border-b border-white/[0.06] overflow-hidden">
               <EventTimeline events={events} isRunning={isRunning} />

@@ -100,9 +100,10 @@ function ThinkingBubble({ event, index }: { event: WorkflowEvent; index: number 
 interface AgentThinkingProps {
   events: WorkflowEvent[];
   isRunning: boolean;
+  hideHeader?: boolean;
 }
 
-export function AgentThinking({ events, isRunning }: AgentThinkingProps) {
+export function AgentThinking({ events, isRunning, hideHeader }: AgentThinkingProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const thinkingEvents = events.filter(e => e.type === 'llm_call_completed' && e.response);
 
@@ -114,15 +115,17 @@ export function AgentThinking({ events, isRunning }: AgentThinkingProps) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3 shrink-0">
-        <div className="flex items-center gap-2">
-          <Brain size={13} className={isRunning ? 'text-apple-bright-blue animate-pulse' : 'text-white/30'} />
-          <span className="text-micro font-medium tracking-wider uppercase text-white/40">Agent Thinking</span>
+      {!hideHeader && (
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <Brain size={13} className={isRunning ? 'text-apple-bright-blue animate-pulse' : 'text-white/30'} />
+            <span className="text-micro font-medium tracking-wider uppercase text-white/40">Agent Thinking</span>
+          </div>
+          {thinkingEvents.length > 0 && (
+            <span className="text-nano text-white/20">{thinkingEvents.length}</span>
+          )}
         </div>
-        {thinkingEvents.length > 0 && (
-          <span className="text-nano text-white/20">{thinkingEvents.length}</span>
-        )}
-      </div>
+      )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4">
         {thinkingEvents.length === 0 ? (
