@@ -19,7 +19,8 @@ HOME = os.path.expanduser("~")
 LOCAL = os.path.join(HOME, ".local")
 NODE_DIR = os.path.join(LOCAL, "node")
 BIN_DIR = os.path.join(LOCAL, "bin")
-REPO_DIR = os.path.join(HOME, "modularized_agent_ui")
+# CML sets CWD to the project root when running a job script
+REPO_DIR = os.getcwd()
 
 NODE_VERSION = os.environ.get("NODE_VERSION", "20")
 NODE_DIST_BASE = f"https://nodejs.org/dist/latest-v{NODE_VERSION}.x"
