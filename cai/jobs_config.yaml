@@ -24,10 +24,10 @@ jobs:
     name: "Setup Environment"
     script: "cai/setup_environment.py"
     parent_job_key: "git_sync"
-    timeout: 3600      # Node install + npm ci + build + nginx compile
+    timeout: 1800      # Node install + npm ci + npm run build
     cpu: 4
     memory: 8
-    description: "Install Node.js, build Next.js standalone output, compile nginx"
+    description: "Install Node.js, build Next.js standalone output"
 
 application:
   name: "Agent Workflow UI"

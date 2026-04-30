@@ -103,7 +103,7 @@ jobs:
   trigger-setup-env:
     needs: [setup-project, trigger-git-sync]
     runs-on: ubuntu-latest
-    timeout-minutes: 90    # Node install + npm ci + build + nginx compile
+    timeout-minutes: 45    # Node install + npm ci + npm run build
 
     steps:
       - uses: actions/checkout@v4

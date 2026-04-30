@@ -131,67 +131,9 @@ def build_nextjs():
     print("Standalone build ready.", flush=True)
 
 
-# ── 3. Install nginx ──────────────────────────────────────────────────────────
-
-NGINX_VERSION = "1.26.1"
-NGINX_URL = f"https://nginx.org/download/nginx-{NGINX_VERSION}.tar.gz"
-PCRE2_VERSION = "10.43"
-PCRE2_URL = f"https://github.com/PCRE2Project/pcre2/releases/download/pcre2-{PCRE2_VERSION}/pcre2-{PCRE2_VERSION}.tar.gz"
-ZLIB_VERSION = "1.3.1"
-ZLIB_URL = f"https://github.com/madler/zlib/releases/download/v{ZLIB_VERSION}/zlib-{ZLIB_VERSION}.tar.gz"
-
-
-def fetch_and_extract(url, dest_dir="/tmp"):
-    fname = url.split("/")[-1]
-    local = os.path.join(dest_dir, fname)
-    if not os.path.exists(local):
-        print(f"Downloading {url}", flush=True)
-        urllib.request.urlretrieve(url, local)
-    folder = local.replace(".tar.gz", "")
-    if not os.path.exists(folder):
-        print(f"Extracting {fname}", flush=True)
-        with tarfile.open(local, "r:gz") as tf:
-            tf.extractall(dest_dir)
-    return folder
-
-
-def install_nginx():
-    nginx_bin = os.path.join(BIN_DIR, "nginx")
-    if os.path.exists(nginx_bin):
-        print(f"nginx already installed at {nginx_bin}", flush=True)
-        return
-
-    pcre2_src = fetch_and_extract(PCRE2_URL)
-    zlib_src = fetch_and_extract(ZLIB_URL)
-    nginx_src = fetch_and_extract(NGINX_URL)
-
-    conf_dir = os.path.join(LOCAL, "conf")
-    os.makedirs(conf_dir, exist_ok=True)
-
-    configure_cmd = (
-        f"./configure "
-        f"--prefix={LOCAL} "
-        f"--sbin-path={nginx_bin} "
-        f"--conf-path={conf_dir}/nginx.conf "
-        f"--pid-path={HOME}/nginx.pid "
-        f"--error-log-path={HOME}/nginx_error.log "
-        f"--http-log-path={HOME}/nginx_access.log "
-        f"--with-pcre={pcre2_src} "
-        f"--with-zlib={zlib_src} "
-        f"--with-http_gzip_static_module "
-        f"--without-http_rewrite_module"
-    )
-
-    run(configure_cmd, cwd=nginx_src)
-    run(f"make -j$(nproc)", cwd=nginx_src)
-    run(f"make install", cwd=nginx_src)
-    print(f"nginx installed at {nginx_bin}", flush=True)
-
-
 # ── main ──────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     install_node()
     build_nextjs()
-    install_nginx()
     print("\nSetup complete. You can now start the CML Application.", flush=True)
