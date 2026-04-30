@@ -72,15 +72,18 @@ def install_node():
     parser = LinkParser()
     parser.feed(content)
     arch = "linux-x64"
-    tarball = next(
+    tarball_path = next(
         (l for l in parser.links if l.endswith(f"{arch}.tar.xz") and "headers" not in l),
         None,
     )
-    if not tarball:
+    if not tarball_path:
         sys.exit(f"Could not find Node.js tarball for {arch}")
 
-    url = f"{NODE_DIST_BASE}/{tarball}"
-    dest = f"/tmp/{tarball}"
+    # Links may be absolute paths (/dist/latest-v20.x/node-v20.x.y-linux-x64.tar.xz)
+    # — use only the filename to avoid doubling the base URL.
+    tarball_name = tarball_path.split("/")[-1]
+    url = f"{NODE_DIST_BASE}/{tarball_name}"
+    dest = f"/tmp/{tarball_name}"
     print(f"Downloading {url}", flush=True)
     urllib.request.urlretrieve(url, dest)
 

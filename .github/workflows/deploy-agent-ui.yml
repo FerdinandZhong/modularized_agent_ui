@@ -15,7 +15,7 @@ on:
         type: boolean
 
 jobs:
-  # ── 1. Get or create the CML project, wait for git clone ──────────────────
+  # ── 1. Get or create the CML project ─────────────────────────────────────
   setup-project:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -23,16 +23,10 @@ jobs:
       project_id: ${{ steps.setup.outputs.project_id }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install requests pyyaml
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11' }
+      - run: pip install -q requests pyyaml
 
       - name: Setup CML Project
         id: setup
@@ -42,36 +36,26 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          echo "🚀 Setting up CML project…"
           python cai/setup_project.py
-          PROJECT_ID=$(cat /tmp/project_id.txt)
-          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
-          echo "✅ Project ID: $PROJECT_ID"
+          echo "project_id=$(cat /tmp/project_id.txt)" >> $GITHUB_OUTPUT
 
       - name: Summary
         if: always()
         run: |
-          echo "## Setup Project" >> $GITHUB_STEP_SUMMARY
-          echo "**Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Project ID**: ${{ steps.setup.outputs.project_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Setup Project — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "Project ID: \`${{ steps.setup.outputs.project_id }}\`" >> $GITHUB_STEP_SUMMARY
 
-  # ── 2. Create / update jobs and the Application ───────────────────────────
+  # ── 2. Create / update jobs and Application ───────────────────────────────
   create-jobs:
     needs: setup-project
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install requests pyyaml
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11' }
+      - run: pip install -q requests pyyaml
 
       - name: Create / update CML Jobs and Application
         env:
@@ -80,58 +64,99 @@ jobs:
           RUNTIME_IDENTIFIER: ${{ github.event.inputs.runtime_identifier }}
           WORKFLOW_BACKEND_URL: ${{ secrets.WORKFLOW_BACKEND_URL }}
           WORKFLOW_API_KEY: ${{ secrets.WORKFLOW_API_KEY }}
-        run: |
-          echo "📋 Creating/updating jobs and application…"
-          python cai/create_jobs.py --project-id ${{ needs.setup-project.outputs.project_id }}
-          echo "✅ Done"
+        run: python cai/create_jobs.py --project-id ${{ needs.setup-project.outputs.project_id }}
 
       - name: Summary
         if: always()
         run: |
-          echo "## Create Jobs" >> $GITHUB_STEP_SUMMARY
-          echo "**Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Project ID**: ${{ needs.setup-project.outputs.project_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Create Jobs — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
 
-  # ── 3. Trigger job chain; restart Application when done ───────────────────
-  trigger-deployment:
+  # ── 3. Git sync ───────────────────────────────────────────────────────────
+  trigger-git-sync:
     needs: [setup-project, create-jobs]
     runs-on: ubuntu-latest
-    timeout-minutes: 120   # git_sync(5) + setup_environment(60) + buffer
+    timeout-minutes: 10
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11' }
+      - run: pip install -q requests pyyaml
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install requests pyyaml
-
-      - name: Trigger deployment and restart Application
+      - name: Trigger Git Repository Sync
         env:
           CML_HOST: ${{ secrets.CML_HOST }}
           CML_API_KEY: ${{ secrets.CML_API_KEY }}
           FORCE_REBUILD: ${{ github.event.inputs.force_rebuild || 'false' }}
         run: |
-          echo "🚀 Triggering deployment…"
           python cai/trigger_jobs.py \
             --project-id ${{ needs.setup-project.outputs.project_id }} \
-            --jobs-config cai/jobs_config.yaml
-          echo "✅ Deployment complete"
+            --jobs-config cai/jobs_config.yaml \
+            --job-key git_sync
 
       - name: Summary
         if: always()
         run: |
-          echo "## Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "**Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Project ID**: ${{ needs.setup-project.outputs.project_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Git Sync — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+
+  # ── 4. Setup environment (install Node, build Next.js, compile nginx) ─────
+  trigger-setup-env:
+    needs: [setup-project, trigger-git-sync]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90    # Node install + npm ci + build + nginx compile
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11' }
+      - run: pip install -q requests pyyaml
+
+      - name: Trigger Setup Environment
+        env:
+          CML_HOST: ${{ secrets.CML_HOST }}
+          CML_API_KEY: ${{ secrets.CML_API_KEY }}
+          FORCE_REBUILD: ${{ github.event.inputs.force_rebuild || 'false' }}
+        run: |
+          python cai/trigger_jobs.py \
+            --project-id ${{ needs.setup-project.outputs.project_id }} \
+            --jobs-config cai/jobs_config.yaml \
+            --job-key setup_environment
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Setup Environment — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+
+  # ── 5. Restart Application ────────────────────────────────────────────────
+  restart-application:
+    needs: [setup-project, trigger-setup-env]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11' }
+      - run: pip install -q requests pyyaml
+
+      - name: Restart CML Application
+        env:
+          CML_HOST: ${{ secrets.CML_HOST }}
+          CML_API_KEY: ${{ secrets.CML_API_KEY }}
+        run: |
+          python cai/trigger_jobs.py \
+            --project-id ${{ needs.setup-project.outputs.project_id }} \
+            --jobs-config cai/jobs_config.yaml \
+            --restart-app
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Restart Application — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Repository | ${{ github.repository }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Repo | ${{ github.repository }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Force Rebuild | ${{ github.event.inputs.force_rebuild || 'false' }} |" >> $GITHUB_STEP_SUMMARY
