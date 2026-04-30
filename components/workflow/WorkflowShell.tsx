@@ -7,6 +7,7 @@ import { AttachmentState } from '@/components/chat/ChatInput';
 import { InputRenderer } from '@/components/inputs/InputRenderer';
 import { ChatView } from '@/components/chat/ChatView';
 import { EventTimeline } from '@/components/events/EventTimeline';
+import { AgentThinking } from '@/components/events/AgentThinking';
 import { WorkflowOutput } from '@/components/output/WorkflowOutput';
 import { useWorkflowStore, getTaskInputNames } from '@/stores/workflowStore';
 import { useEventStore } from '@/stores/eventStore';
@@ -304,6 +305,15 @@ export function WorkflowShell() {
                 <EventTimeline events={events} isRunning={isRunning} />
               </div>
             )}
+          </div>
+        ) : isRunning ? (
+          <div className="flex flex-col h-full overflow-hidden">
+            <div className="h-[40%] shrink-0 border-b border-white/[0.06] overflow-hidden">
+              <EventTimeline events={events} isRunning={isRunning} />
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <AgentThinking events={events} isRunning={isRunning} />
+            </div>
           </div>
         ) : (
           <EventTimeline events={events} isRunning={isRunning} />

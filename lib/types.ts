@@ -73,6 +73,15 @@ export interface WorkflowEvent {
   model?: string;
   prompt_tokens?: number;
   completion_tokens?: number;
+  call_type?: string;
+  response?: string;
+  messages?: Array<{ role: string; content: string }>;
+  // tool events (extended)
+  tool_args?: string;
+  tool_class?: string;
+  // agent_execution_started nested objects
+  agent?: { agent_studio_id?: string };
+  task?: { name?: string | null; description?: string; expected_output?: string };
   // completion
   output?: string;
   result?: string;
