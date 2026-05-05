@@ -300,17 +300,17 @@ export function WorkflowShell() {
         {crewOutput ? (() => {
           const thinkingCount = events.filter(e => e.type === 'llm_call_completed' && e.response).length;
           return (
-            <div className="flex flex-col h-full overflow-hidden">
+            <div className="relative flex flex-col h-full overflow-hidden">
               <div className="flex-1 overflow-hidden">
                 <WorkflowOutput output={crewOutput} workflowUrl={workflowUrl} apiKey={apiKey} />
               </div>
               {thinkingCount > 0 && (
                 <div
-                  className={`shrink-0 border-t border-white/[0.06] overflow-hidden transition-[height] duration-200 ${showReasoning ? 'h-[42%]' : 'h-10'}`}
+                  className={`absolute bottom-0 left-0 right-0 bg-surface-dark-5 border-t border-white/[0.06] overflow-hidden transition-[height] duration-250 ease-in-out ${showReasoning ? 'h-3/4' : 'h-10'}`}
                 >
                   <button
                     onClick={() => setShowReasoning(v => !v)}
-                    className="flex items-center justify-between w-full px-5 h-10 text-white/30 hover:text-white/60 transition-colors"
+                    className="flex items-center justify-between w-full px-5 h-10 text-white/30 hover:text-white/60 transition-colors shrink-0"
                   >
                     <div className="flex items-center gap-2">
                       <Brain size={13} />
@@ -320,11 +320,9 @@ export function WorkflowShell() {
                     </div>
                     {showReasoning ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                   </button>
-                  {showReasoning && (
-                    <div className="h-[calc(100%-2.5rem)] overflow-hidden">
-                      <AgentThinking events={events} isRunning={false} hideHeader />
-                    </div>
-                  )}
+                  <div className="h-[calc(100%-2.5rem)] overflow-hidden">
+                    <AgentThinking events={events} isRunning={false} hideHeader />
+                  </div>
                 </div>
               )}
             </div>
