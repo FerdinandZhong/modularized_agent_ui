@@ -306,7 +306,7 @@ export function WorkflowShell() {
               </div>
               {thinkingCount > 0 && (
                 <div
-                  className={`absolute bottom-0 left-0 right-0 bg-surface-dark-5 border-t border-white/[0.06] overflow-hidden transition-[height] duration-250 ease-in-out ${showReasoning ? 'h-3/4' : 'h-10'}`}
+                  className={`absolute bottom-0 left-0 right-0 bg-surface-dark-5 border-t border-white/[0.06] overflow-hidden transition-[height] duration-250 ease-in-out ${showReasoning ? 'h-full' : 'h-10'}`}
                 >
                   <button
                     onClick={() => setShowReasoning(v => !v)}

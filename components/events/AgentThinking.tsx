@@ -70,7 +70,7 @@ function ThinkingBubble({ event, index }: { event: WorkflowEvent; index: number 
               <p className="text-nano text-apple-blue/50 mb-1 uppercase tracking-wider font-medium">Action</p>
               <p className="text-caption text-apple-bright-blue font-medium">{parsed.action}</p>
               {parsed.actionInput && (
-                <pre className="mt-2 text-nano text-white/30 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-28 overflow-y-auto">
+                <pre className="mt-2 text-nano text-white/30 whitespace-pre-wrap break-words font-mono leading-relaxed">
                   {parsed.actionInput}
                 </pre>
               )}
@@ -79,7 +79,7 @@ function ThinkingBubble({ event, index }: { event: WorkflowEvent; index: number 
           {parsed.finalAnswer && (
             <div className="rounded-xl bg-emerald-500/[0.06] border border-emerald-500/[0.15] px-3 py-2.5">
               <p className="text-nano text-emerald-400/50 mb-1 uppercase tracking-wider font-medium">Final Answer</p>
-              <p className="text-caption text-white/65 leading-relaxed whitespace-pre-wrap line-clamp-5">
+              <p className="text-caption text-white/65 leading-relaxed whitespace-pre-wrap">
                 {parsed.finalAnswer}
               </p>
             </div>
@@ -87,7 +87,7 @@ function ThinkingBubble({ event, index }: { event: WorkflowEvent; index: number 
         </>
       ) : (
         <div className="rounded-xl bg-white/[0.03] border border-white/[0.05] px-3 py-2.5">
-          <p className="text-caption text-white/40 leading-relaxed whitespace-pre-wrap line-clamp-4">{response}</p>
+          <p className="text-caption text-white/40 leading-relaxed whitespace-pre-wrap">{response}</p>
         </div>
       )}
       <p className="text-nano text-white/15 px-1">{formatTime(event.timestamp)}</p>
